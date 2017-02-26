@@ -17,7 +17,7 @@ public abstract class AverageMap {
     private Integer sampleNum = 0;
 
     /**
-     * Constructor. Creates the average map.
+     * Constructor
      *
      * @param cat Catalog of Galaxy objects used to create map samples.
      * @param boundingBox Box of interest to work with.
@@ -30,14 +30,12 @@ public abstract class AverageMap {
 
         // Initialize the double array.
         map = new double[boundingBox.nx][boundingBox.ny][boundingBox.nz];
-
-        createAverageMap();
     }
 
     /**
      * Creates the average map in parallel using sample drawing threads.
      */
-    private void createAverageMap(){
+    public void createAverageMap(){
         // Get the number of cores.
         int numCores = Runtime.getRuntime().availableProcessors();
 

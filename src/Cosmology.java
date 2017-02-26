@@ -14,6 +14,23 @@ public interface Cosmology {
     public double comovingDist(double z);
 
     /**
+     * Calculates the transverse comoving distance from the redshift given the cosmology.
+     *
+     * @param z Redshift
+     * @return Transverse Comoving Distance
+     */
+    public double transverseComovingDist(double z);
+
+    /**
+     * Calculates the differential comoving difference with respect to delta-z.
+     *
+     * @param z Redshift
+     * @param dz Delta-z
+     * @return Delta-Dc
+     */
+    public double differentialComDist(double z, double dz);
+
+    /**
      * Performs error propagation from error in z to error in comoving distance.
      *
      * @param z Redshift

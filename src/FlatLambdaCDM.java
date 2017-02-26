@@ -75,6 +75,16 @@ public class FlatLambdaCDM implements Cosmology {
     }
 
     @Override
+    public double transverseComovingDist(double z) {
+        return comovingDist(z);
+    }
+
+    @Override
+    public double differentialComDist(double z, double dz) {
+        return dh * dz / E(z);
+    }
+
+    @Override
     public double comDistErr(double z, double zErr) {
         return zErr * dh / E(z);
     }
