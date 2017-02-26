@@ -8,12 +8,12 @@ import java.util.Random;
  */
 public class Catalog {
     // Cosmology for the catalog.
-    public final Cosmology cosmo;
+    final Cosmology cosmo;
 
     // Collection of Galaxy and CartesianGalaxy objects.
-    public final Galaxy gals[];
-    public final CartesianGalaxy cartNorms[];
-    public CartesianGalaxy cartSamps[];
+    final Galaxy gals[];
+    final CartesianGalaxy cartNorms[];
+    CartesianGalaxy cartSamps[];
 
     /**
      * Constructor

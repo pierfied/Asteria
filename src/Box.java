@@ -6,7 +6,7 @@ public class Box {
     double x0,y0,z0;
 
     // Number of voxels in each direction.
-    double nx,ny,nz;
+    int nx,ny,nz;
 
     // Length of each voxel in one direction.
     double voxLen;
@@ -22,7 +22,7 @@ public class Box {
      * @param nz Number of voxels in z direction.
      * @param voxLen Length of each voxel in one direction.
      */
-    public Box(double x0, double y0, double z0, double nx, double ny, double nz, double voxLen){
+    public Box(double x0, double y0, double z0, int nx, int ny, int nz, double voxLen){
         this.x0 = x0;
         this.y0 = y0;
         this.z0 = z0;
