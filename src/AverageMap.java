@@ -1,4 +1,7 @@
 /**
+ * <h1>Average Map</h1>
+ * Abstract class used to generate map samples from a catalog. Requires implementation of the drawSample method.
+ *
  * Created by pierfiedorowicz on 2/26/17.
  */
 public abstract class AverageMap {
