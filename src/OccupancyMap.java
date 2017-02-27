@@ -1,4 +1,7 @@
 /**
+ * <h1>Occupancy Map</h1>
+ * Map object that uses a random points catalog to calculate the occupancy percentage of each voxel.
+ *
  * Created by pierfiedorowicz on 2/26/17.
  */
 public class OccupancyMap extends AverageMap {
@@ -80,6 +83,7 @@ public class OccupancyMap extends AverageMap {
             // Draw a Cartesian sample for the current galaxy.
             CartesianGalaxy cartSamp = cat.drawCartesianSample(i);
 
+            // Calculate the index of the sampled point.
             int a = (int) ((cartSamp.x - boundingBox.x0)/boundingBox.voxLen);
             int b = (int) ((cartSamp.y - boundingBox.y0)/boundingBox.voxLen);
             int c = (int) ((cartSamp.z - boundingBox.z0)/boundingBox.voxLen);
