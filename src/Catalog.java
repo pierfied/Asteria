@@ -44,9 +44,12 @@ public class Catalog {
             double theta = Math.PI / 2.0 - (Math.PI / 180.0) * gals[i].dec;
 
             // Calculate the normal components.
-            cartNorms[i].x = Math.sin(theta) * Math.cos(phi);
-            cartNorms[i].y = Math.sin(theta) * Math.sin(phi);
-            cartNorms[i].z = Math.cos(theta);
+            double x = Math.sin(theta) * Math.cos(phi);
+            double y = Math.sin(theta) * Math.sin(phi);
+            double z = Math.cos(theta);
+
+            // Create the CartesianGalaxy object.
+            cartNorms[i] = new CartesianGalaxy(x,y,z);
         }
     }
 
