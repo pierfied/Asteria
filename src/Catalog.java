@@ -13,7 +13,9 @@ public class Catalog {
     // Collection of Galaxy and CartesianGalaxy objects.
     final Galaxy gals[];
     final CartesianGalaxy cartNorms[];
-    CartesianGalaxy cartSamps[];
+
+    // Random number generator for the class.
+    Random rand = new Random();
 
     /**
      * Constructor
@@ -27,11 +29,9 @@ public class Catalog {
 
         // Initialize the normals and samples arrays.
         cartNorms = new CartesianGalaxy[gals.length];
-        cartSamps = new CartesianGalaxy[gals.length];
 
         // Create the normals and draw the initial Cartesian samples.
         createNorms();
-        drawCartesianSamples();
     }
 
     /**
@@ -50,25 +50,31 @@ public class Catalog {
         }
     }
 
+
     /**
-     * Draw a new Cartesian coordinate sample for each galaxy.
+     * Draw a new Cartesian redshift sample for the galaxy with the given id. Returns null for invalid id.
+     *
+     * @param id Index of the galaxy of interest.
+     * @return CartesianGalaxy object containing the cooridnates of the redshift sample.
      */
-    public void drawCartesianSamples(){
-        // Get a new random number generator.
-        Random rand = new Random();
-
-        for(int i = 0; i < gals.length; i++){
-            // Draw a new redshift sample.
-            double zSamp = gals[i].zPhoto + gals[i].zErr * rand.nextGaussian();
-
-            // Calculate the comoving distance of the sample.
-            double comDist = cosmo.comovingDist(zSamp);
-
-            // Calculate the Cartesian coordinates of the new sample.
-            cartSamps[i].x = comDist * cartNorms[i].x;
-            cartSamps[i].y = comDist * cartNorms[i].y;
-            cartSamps[i].z = comDist * cartNorms[i].z;
+    public CartesianGalaxy drawCartesianSample(int id){
+        // Verify that the id is valid.
+        if(id < 0 || id >= gals.length){
+            return null;
         }
+
+        // Draw a new redshift sample.
+        double zSamp = gals[id].zPhoto + gals[id].zErr * rand.nextGaussian();
+
+        // Calculate the comoving distance of the sample.
+        double comDist = cosmo.comovingDist(zSamp);
+
+        // Calculate the Cartesian coordinates of the new sample.
+        double x = comDist * cartNorms[id].x;
+        double y = comDist * cartNorms[id].y;
+        double z = comDist * cartNorms[id].z;
+
+        return new CartesianGalaxy(x,y,z);
     }
 
     /**

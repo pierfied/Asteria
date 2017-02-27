@@ -75,15 +75,16 @@ public class OccupancyMap extends AverageMap {
         // Declare and initialize the sample array.
         double sample[][][] = new double[boundingBox.nx][boundingBox.ny][boundingBox.nz];
 
-        // Draw new Cartesian sample values.
-        cat.drawCartesianSamples();
-
         // Add each random point to the appropriate voxel.
-        for(int i = 0; i < cat.cartSamps.length; i++){
-            int a = (int) ((cat.cartSamps[i].x - boundingBox.x0)/boundingBox.voxLen);
-            int b = (int) ((cat.cartSamps[i].y - boundingBox.y0)/boundingBox.voxLen);
-            int c = (int) ((cat.cartSamps[i].z - boundingBox.z0)/boundingBox.voxLen);
+        for(int i = 0; i < cat.gals.length; i++){
+            // Draw a Cartesian sample for the current galaxy.
+            CartesianGalaxy cartSamp = cat.drawCartesianSample(i);
 
+            int a = (int) ((cartSamp.x - boundingBox.x0)/boundingBox.voxLen);
+            int b = (int) ((cartSamp.y - boundingBox.y0)/boundingBox.voxLen);
+            int c = (int) ((cartSamp.z - boundingBox.z0)/boundingBox.voxLen);
+
+            // Verify that the drawn point is within the box.
             if(a >= 0 && a < boundingBox.nx && b >= 0 && b < boundingBox.ny && c >= 0 && c < boundingBox.nz){
                 sample[a][b][c]++;
             }
