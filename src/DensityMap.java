@@ -1,5 +1,4 @@
 import org.apache.commons.math3.fitting.GaussianCurveFitter;
-import org.apache.commons.math3.fitting.WeightedObservedPoint;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
 
 /**
@@ -26,7 +25,6 @@ public class DensityMap extends AverageMap{
 
     @Override
     public double[][][] drawMapSample() {
-
         // Add each galaxy to a voxel.
         double N[][][] = new double[boundingBox.nx][boundingBox.ny][boundingBox.nz];
         for(int i = 0; i < cat.gals.length; i++){
@@ -44,10 +42,10 @@ public class DensityMap extends AverageMap{
             }
         }
 
-        // Update the number counts to account for the box occupancy, calculated expected number count, and max f value.
+        // Update the number counts to account for the box occupancy, and calculate the expected number counts based
+        // upon boxes with occupancy of greater than 0.9.
         int numContributors = 0;
         double expectedN = 0;
-        double maxf = 0;
         for(int i = 0; i < boundingBox.nx; i++){
             for(int j = 0; j < boundingBox.ny; j++){
                 for(int k = 0; k < boundingBox.nz; k++){
@@ -58,57 +56,22 @@ public class DensityMap extends AverageMap{
                         expectedN += N[i][j][k];
                         numContributors++;
                     }
-
-                    // Update maxf as necessary.
-                    if(fMap.map[i][j][k] > maxf) maxf = fMap.map[i][j][k];
                 }
             }
         }
         expectedN /= numContributors;
 
-        // Calculate y values and create the bucket counts.
-        double df = 0.1;
-        int numBins = (int) Math.ceil(maxf / df);
-        int bucketCounts[] = new int[numBins];
-        double y[][][] = new double[boundingBox.nx][boundingBox.ny][boundingBox.nz];
+        // Calculate the density contrasts.
+        double map[][][] = new double[boundingBox.nx][boundingBox.ny][boundingBox.nz];
         for(int i = 0; i < boundingBox.nx; i++){
             for(int j = 0; j < boundingBox.ny; j++){
                 for(int k = 0; k < boundingBox.nz; k++){
-                    y[i][j][k] = Math.log(N[i][j][k]) - Math.log(expectedN);
-
-                    // Calculate which bucket this y sample belongs to and increase the count.
-                    int bucketInd = (int) (fMap.map[i][j][k] / df);
-                    bucketCounts[bucketInd]++;
+                    map[i][j][k] = N[i][j][k] / expectedN - 1;
                 }
             }
         }
 
-        // Allocate and initialize the sample arrays for each bucket.
-        double samps[][] = new double[numBins][];
-        for(int i = 0; i < numBins; i++){
-            samps[i] = new double[bucketCounts[i]];
-        }
-
-        // Add each y sample to the appropriate bucket.
-        int inds[] = new int[numBins];
-        for(int i = 0; i < boundingBox.nx; i++){
-            for(int j = 0; j < boundingBox.ny; j++){
-                for(int k = 0; k < boundingBox.nz; k++){
-                    // Calculate which bucket this y sample belongs to and add it to the bucket array/
-                    int bucketInd = (int) (fMap.map[i][j][k] / df);
-                    samps[bucketInd][inds[bucketInd]++] = y[i][j][k];
-                }
-            }
-        }
-
-        // Calculate sigma for each bucket.
-        double sigmas[] = new double[numBins];
-        for(int i = 0; i < numBins; i++){
-            double fit[] = fitGaussian(samps[i],20);
-            sigmas[i] = fit[2];
-        }
-
-        return y;
+        return map;
     }
 
     public double[] fitGaussian(double samps[], int numBins){
