@@ -13,8 +13,7 @@ public abstract class AverageMap {
     Box boundingBox;
 
     // Sample number information.
-    final int numSamples;
-    private Integer sampleNum = 0;
+    private final int numSamples;
 
     /**
      * Constructor
@@ -42,7 +41,7 @@ public abstract class AverageMap {
         // Create and start all of the map threads.
         Thread threads[] = new MapThread[numCores];
         for(int i = 0; i < numCores; i++){
-            threads[i] = new MapThread();
+            threads[i] = new MapThread(i,numCores);
             threads[i].start();
         }
 
@@ -77,29 +76,36 @@ public abstract class AverageMap {
      * A thread class that draws new map samples in parallel and adds them to the average map array.
      */
     private class MapThread extends Thread{
+        int id;
+        int numWorkers;
+        double threadMap[][][] = new double[boundingBox.nx][boundingBox.ny][boundingBox.ny];
+
+        public MapThread(int id, int numWorkers){
+            this.id = id;
+            this.numWorkers = numWorkers;
+        }
+
         public void run(){
-            while(true){
-                // Get the current sample number.
-                int curSamp;
-                synchronized (sampleNum){
-                    curSamp = sampleNum++;
-                }
-
-                // Check if done sampling.
-                if(curSamp >= numSamples){
-                    break;
-                }
-
+            for(int samp = id; samp < numSamples; samp += numWorkers){
                 // Draw a new sample.
                 double sample[][][] = drawMapSample();
 
-                // Add sample values to the average map.
-                synchronized (map){
-                    for(int i = 0; i < boundingBox.nx; i++){
-                        for(int j = 0; j < boundingBox.ny; j++){
-                            for(int k = 0; k < boundingBox.nz; k++){
-                                map[i][j][k] += sample[i][j][k];
-                            }
+                // Add sample values to the thread's average map.
+                for(int i = 0; i < boundingBox.nx; i++){
+                    for(int j = 0; j < boundingBox.ny; j++){
+                        for(int k = 0; k < boundingBox.nz; k++){
+                            threadMap[i][j][k] += sample[i][j][k];
+                        }
+                    }
+                }
+            }
+
+            // Add sample values to the thread's average map.
+            synchronized (map){
+                for(int i = 0; i < boundingBox.nx; i++){
+                    for(int j = 0; j < boundingBox.ny; j++){
+                        for(int k = 0; k < boundingBox.nz; k++){
+                            map[i][j][k] += threadMap[i][j][k];
                         }
                     }
                 }
