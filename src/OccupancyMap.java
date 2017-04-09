@@ -1,3 +1,5 @@
+import java.util.Random;
+
 /**
  * <h1>Occupancy Map</h1>
  * Map object that uses a random points catalog to calculate the occupancy percentage of each voxel.
@@ -28,7 +30,8 @@ public class OccupancyMap extends AverageMap {
     }
 
     /**
-     * Calculates the expected number count density of the random points.
+     * Calculates the expected number count density of the random points
+     * using random points samples.
      *
      * @param Omega Survey area in steradians.
      * @return Randoms expected number count density.
@@ -46,15 +49,21 @@ public class OccupancyMap extends AverageMap {
         }
 
         // Count the number of galaxies in each bucket.
+        Random rand = new Random();
         int numBuckets = (int) ((maxZ - minZ)/DELTA_Z);
         double N[] = new double[numBuckets];
         for(int i = 0; i < cat.gals.length; i++){
-            // Get the redshift bin index of the current galaxy.
-            int ind = (int) ((cat.gals[i].zPhoto - minZ)/DELTA_Z);
+            for(int j = 0; j < numSamples; j++) {
+                // Get a new redshift sample for the random point.
+                double zSamp = cat.gals[i].zPhoto  + rand.nextGaussian() * cat.gals[i].zErr;
 
-            // If the index is valid, update the number of galaxies in that redshift bin.
-            if(ind >= 0 && ind < numBuckets){
-                N[ind]++;
+                // Get the redshift bin index of the current galaxy.
+                int ind = (int) ((zSamp - minZ) / DELTA_Z);
+
+                // If the index is valid, update the number of galaxies in that redshift bin.
+                if (ind >= 0 && ind < numBuckets) {
+                    N[ind]++;
+                }
             }
         }
 
@@ -63,6 +72,9 @@ public class OccupancyMap extends AverageMap {
         for(int i = 0; i < numBuckets; i++){
             // Find the midpoint of the bin.
             double midZ = minZ + (i + 0.5) * DELTA_Z;
+
+            // Average the bin count over the samples.
+            N[i] /= numSamples;
 
             // Calculate the transverse comoving distance.
             double D_M = cat.cosmo.transverseComovingDist(midZ);
