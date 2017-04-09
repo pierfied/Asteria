@@ -13,7 +13,7 @@ public abstract class AverageMap {
     Box boundingBox;
 
     // Sample number information.
-    private final int numSamples;
+    final int numSamples;
 
     /**
      * Constructor
@@ -78,7 +78,7 @@ public abstract class AverageMap {
     private class MapThread extends Thread{
         int id;
         int numWorkers;
-        double threadMap[][][] = new double[boundingBox.nx][boundingBox.ny][boundingBox.ny];
+        double threadMap[][][] = new double[boundingBox.nx][boundingBox.ny][boundingBox.nz];
 
         public MapThread(int id, int numWorkers){
             this.id = id;
@@ -100,7 +100,7 @@ public abstract class AverageMap {
                 }
             }
 
-            // Add sample values to the thread's average map.
+            // Add sample values to the overall average map.
             synchronized (map){
                 for(int i = 0; i < boundingBox.nx; i++){
                     for(int j = 0; j < boundingBox.ny; j++){
