@@ -36,5 +36,39 @@ public class Asteria {
             }
         }
         out.close();
+
+        System.out.println("Creating d-Map");
+        DensityMap dMap = new DensityMap(galCat,box,1000,fMap);
+
+        out = new PrintWriter("delta.csv");
+        for(int i = 0; i < box.nx; i++){
+            for(int j = 0; j < box.ny; j++){
+                for(int k = 0; k < box.nz; k++){
+                    double x = box.x0 + (i + 0.5) * box.voxLen;
+                    double y = box.x0 + (j + 0.5) * box.voxLen;
+                    double z = box.x0 + (k + 0.5) * box.voxLen;
+
+                    out.println(x + "," + y + "," + z + "," + dMap.map[i][j][k]);
+                }
+            }
+        }
+        out.close();
+
+        System.out.println("Regularizing d-Map");
+        dMap.regularizeMap();
+
+        out = new PrintWriter("reg.csv");
+        for(int i = 0; i < box.nx; i++){
+            for(int j = 0; j < box.ny; j++){
+                for(int k = 0; k < box.nz; k++){
+                    double x = box.x0 + (i + 0.5) * box.voxLen;
+                    double y = box.x0 + (j + 0.5) * box.voxLen;
+                    double z = box.x0 + (k + 0.5) * box.voxLen;
+
+                    out.println(x + "," + y + "," + z + "," + dMap.map[i][j][k]);
+                }
+            }
+        }
+        out.close();
     }
 }

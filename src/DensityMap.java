@@ -21,6 +21,8 @@ public class DensityMap extends AverageMap{
     public DensityMap(Catalog cat, Box boundingBox, int numSamples, OccupancyMap fMap) {
         super(cat, boundingBox, numSamples);
         this.fMap = fMap;
+
+        super.createAverageMap();
     }
 
     @Override
@@ -74,30 +76,146 @@ public class DensityMap extends AverageMap{
         return map;
     }
 
-    public double[] fitGaussian(double samps[], int numBins){
-        double min = Double.POSITIVE_INFINITY;
-        double max = Double.NEGATIVE_INFINITY;
-        for(int i = 0; i < samps.length; i++){
-            if(samps[i] < min && !Double.isInfinite(samps[i])) min = samps[i];
-            if(samps[i] > max && !Double.isInfinite(samps[i])) max = samps[i];
+    public void regularizeMap(){
+        // Calculate the maximum occupancy value.
+        double fMax = Double.NEGATIVE_INFINITY;
+        for(int i = 0; i < boundingBox.nx; i++){
+            for(int j = 0; j < boundingBox.ny; j++){
+                for(int k = 0; k < boundingBox.nz; k++){
+                    if(fMap.map[i][j][k] > fMax) fMax = fMap.map[i][j][k];
+                }
+            }
         }
 
-        double bins[] = new double[numBins];
-        double binWidth = (max - min)/numBins;
-        for(int i = 0; i < samps.length; i++){
-            if(Double.isInfinite(samps[i])) continue;
+        // Create the bin indices.
+        double fBinWidth = 0.1;
+        int numBins = (int)Math.ceil(fMax/fBinWidth);
 
-            int bin = (int) ((samps[i] - min)/binWidth);
+        // Create the yMap, and calculate the bin counts.
+        double yMap[][][] = new double[boundingBox.nx][boundingBox.ny][boundingBox.nz];
+        int binCounts[] = new int[numBins];
+        for(int i = 0; i < boundingBox.nx; i++){
+            for(int j = 0; j < boundingBox.ny; j++){
+                for(int k = 0; k < boundingBox.nz; k++){
+                    // Calculate the y values (log-normal).
+                    yMap[i][j][k] = Math.log(1 + map[i][j][k]);
 
-            samps[bin]++;
+                    // Update the appropriate bin count.
+                    int ind = (int)(fMap.map[i][j][k] / fBinWidth);
+                    binCounts[ind]++;
+                }
+            }
         }
 
-        WeightedObservedPoints obs = new WeightedObservedPoints();
+        // Create the bins.
+        int binInds[] = new int[numBins];
+        double bins[][] = new double[numBins][];
         for(int i = 0; i < numBins; i++){
-            double midBinVal = min + (i + 0.5) * binWidth;
-            obs.add(midBinVal, bins[i]);
+            bins[i] = new double[binCounts[i]];
         }
 
-        return GaussianCurveFitter.create().fit(obs.toList());
+        // Populate the bins.
+        for(int i = 0; i < boundingBox.nx; i++){
+            for(int j = 0; j < boundingBox.ny; j++){
+                for(int k = 0; k < boundingBox.nz; k++){
+                    // Get the appropriate bin.
+                    int ind = (int)(fMap.map[i][j][k] / fBinWidth);
+
+                    // Add the data to the bin.
+                    bins[ind][binInds[ind]++] = yMap[i][j][k];
+                }
+            }
+        }
+
+        // Get the most likely bin with occupancy greater than 0.5
+        int max = Integer.MIN_VALUE;
+        int maxInd = 0;
+        int highOccCount = 0;
+        for(int i = 0; i < numBins; i++){
+            if(i * fBinWidth < 0.5) continue;
+            if(binCounts[i] > max){
+                max = binCounts[i];
+                highOccCount = max;
+                maxInd = i;
+            }else{
+                highOccCount += binCounts[i];
+            }
+        }
+
+        // Get the high occupancy y values.
+        int ind = 0;
+        double highOccY[] =  new double[highOccCount];
+        for(int i = maxInd; i < numBins; i++){
+            for(int j = 0; j < bins[i].length; j++){
+                highOccY[ind++] = bins[i][j];
+            }
+        }
+
+        // Calculate the overall mean for the y values and the corresponding regularization weight.
+        double mean = calculateMean(highOccY);
+        double meanRegWeight = 1 / calculateVar(highOccY, mean);
+        System.out.println("Mean: " + mean);
+        System.out.println("Mean Weight: " + meanRegWeight);
+
+        // Calculate the regularization weight for each bin.
+        double regWeights[] = new double[numBins];
+        for(int i = 0; i < numBins; i++){
+            regWeights[i] = 1 / calculateVar(bins[i], mean);
+            System.out.println("Weight for f-bin " + i * fBinWidth + ": " + regWeights[i]);
+        }
+
+        // Regularize all of the density map values.
+        for(int i = 0; i < boundingBox.nx; i++){
+            for(int j = 0; j < boundingBox.ny; j++){
+                for(int k = 0; k < boundingBox.nz; k++){
+                    // Get the appropriate bin.
+                    ind = (int)(fMap.map[i][j][k] / fBinWidth);
+
+                    // Calculate the regularized y value.
+                    if(fMap.map[i][j][k] > 0) {
+                        yMap[i][j][k] = (regWeights[ind] * yMap[i][j][k] + meanRegWeight * mean)
+                                / (regWeights[ind] + meanRegWeight);
+                    }else{
+                        // Set y to the mean if the occupancy is zero.
+                        yMap[i][j][k] = mean;
+                    }
+
+                    // Calculate the regularized delta value.
+                    map[i][j][k] = Math.exp(yMap[i][j][k]) - 1;
+                }
+            }
+        }
+    }
+
+    private double calculateMean(double data[]){
+        double sum = 0;
+        int numValidPoints = 0;
+        for(int i = 0; i < data.length; i++){
+            // Verify that the data point is valid.
+            if(Double.isInfinite(data[i]) || Double.isNaN(data[i])) continue;
+
+            // Add the point to the sum.
+            sum += data[i];
+            numValidPoints++;
+        }
+
+        // Return the average.
+        return sum/numValidPoints;
+    }
+
+    private double calculateVar(double data[], double mean){
+        double sum = 0;
+        int numValidPoints = 0;
+        for(int i = 0; i < data.length; i++){
+            // Verify that the data point is valid.
+            if(Double.isInfinite(data[i]) || Double.isNaN(data[i])) continue;
+
+            // Add the point to the sum.
+            sum += Math.pow(data[i] - mean, 2);
+            numValidPoints++;
+        }
+
+        // Return the unbiased variance estimate.
+        return sum / (numValidPoints - 1);
     }
 }
